@@ -1,4 +1,3 @@
-import {createRemoteJWKSet, jwtVerify} from "jose";
 import {createMiddleware} from "hono/factory";
 import {HTTPException} from "hono/http-exception";
 import {getCookie} from "hono/cookie";
@@ -94,10 +93,10 @@ async function validateScalekitToken(token: string, env: Env): Promise<{ sub: st
             });
             
             if (response.ok) {
-                const data = await response.json();
+                const data = await response.json() as Record<string, any>;
                 console.log('Session validation successful');
                 
-                const userId = data.user_id || data.user?.id || data.sub || data.userId || data.session?.user_id;
+                const userId = data.user_id || (data.user as Record<string, any>)?.id || data.sub || data.userId || (data.session as Record<string, any>)?.user_id;
                 if (!userId) {
                     throw new Error('Session validation succeeded but no user ID found in response');
                 }
@@ -162,7 +161,7 @@ async function validateScalekitToken(token: string, env: Env): Promise<{ sub: st
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const data = await response.json() as Record<string, any>;
             const userId = data.sub || data.user_id || data.id || data.email;
             if (userId) {
                 console.log('Userinfo endpoint successful');
@@ -188,7 +187,7 @@ async function getTokenEndpoint(env: Env): Promise<string> {
         const discoveryUrl = `${env.SCALEKIT_ENVIRONMENT_URL}/.well-known/oauth-authorization-server`;
         const response = await fetch(discoveryUrl);
         if (response.ok) {
-            const discovery = await response.json();
+            const discovery = await response.json() as { token_endpoint?: string };
             if (discovery.token_endpoint) {
                 console.log(`Found token endpoint from discovery: ${discovery.token_endpoint}`);
                 return discovery.token_endpoint;
@@ -252,7 +251,16 @@ export async function exchangeCodeForToken(code: string, redirectUri: string, en
         throw new Error(`Token exchange failed: ${errorMessage}`);
     }
 
-    const tokenData = await response.json();
+    const tokenData = await response.json() as {
+        session_id?: string;
+        session_token?: string;
+        access_token?: string;
+        id_token?: string;
+        token_type?: string;
+        expires_in?: number;
+        refresh_token?: string;
+        scope?: string;
+    };
     
     // Scalekit might return session_id, session_token, access_token, or id_token
     const sessionToken = tokenData.session_id || tokenData.session_token || tokenData.access_token || tokenData.id_token;

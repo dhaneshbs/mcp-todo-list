@@ -190,7 +190,7 @@ export function Authenticate() {
                     localStorage.removeItem(processedKey);
                     onLoginComplete();
                 } else {
-                    const errorData = await response.json();
+                    const errorData = await response.json() as { error?: string };
                     // Remove the processed marker on error so user can retry
                     localStorage.removeItem(processedKey);
                     throw new Error(errorData.error || 'Token exchange failed');
